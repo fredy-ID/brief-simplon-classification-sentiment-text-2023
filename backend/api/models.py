@@ -63,3 +63,15 @@ class SpectatorCritics(models.Model):
 
     class Meta:
         db_table = 'spectator_critics'
+
+class History(models.Model):
+    id_history = models.AutoField(primary_key=True)
+    analyze_date = models.DateTimeField(blank=True, null=True)
+    validated = models.BooleanField(blank=True, null=True)
+    id_distilbert = models.ForeignKey('ModelDistilbertBmcss', models.DO_NOTHING, db_column='id_distilbert', blank=True, null=True)
+    id_bert = models.ForeignKey('ModelBertBmus', models.DO_NOTHING, db_column='id_bert', blank=True, null=True)
+    id_spectator_critics = models.ForeignKey('SpectatorCritics', models.DO_NOTHING, db_column='id_spectator_critics', blank=True, null=True)
+    id_film = models.ForeignKey(Film, models.DO_NOTHING, db_column='id_film', blank=True, null=True)
+
+    class Meta:
+        db_table = 'history'

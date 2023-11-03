@@ -47,3 +47,18 @@ CREATE TABLE IF NOT EXISTS model_distilbert_bmcss(
    PRIMARY KEY(id_distilbert),
    FOREIGN KEY(id_spectator_critics) REFERENCES spectator_critics(id_spectator_critics)
 );
+
+CREATE TABLE IF NOT EXISTS history(
+   id_history SERIAL,
+   analyze_date TIMESTAMP WITH TIME ZONE,
+   validated BOOLEAN,
+   id_distilbert INT,
+   id_bert INT,
+   id_spectator_critics INT,
+   id_film INT,
+   PRIMARY KEY(id_history),
+   FOREIGN KEY(id_distilbert) REFERENCES model_distilbert_bmcss(id_distilbert),
+   FOREIGN KEY(id_bert) REFERENCES model_bert_bmus(id_bert),
+   FOREIGN KEY(id_spectator_critics) REFERENCES spectator_critics(id_spectator_critics),
+   FOREIGN KEY(id_film) REFERENCES film(id_film)
+);

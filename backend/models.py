@@ -17,15 +17,6 @@ class DjangoMigrations(models.Model):
     class Meta:
         managed = False
         db_table = 'django_migrations'
-        
-
-class History(models.Model):
-    id_history = models.AutoField(primary_key=True)
-    analyze_date = models.DateTimeField(blank=True, null=True)
-    validated = models.BooleanField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'history'
 
 
 class Film(models.Model):
@@ -35,10 +26,21 @@ class Film(models.Model):
     stars_spectators = models.CharField(max_length=50, blank=True, null=True)
     release_date = models.DateField(blank=True, null=True)
     reference = models.IntegerField(blank=True, null=True)
-    id_history = models.ForeignKey('History', models.DO_NOTHING, db_column='id_history', blank=True, null=False)
+    id_history = models.ForeignKey('History', models.DO_NOTHING, db_column='id_history')
 
     class Meta:
+        managed = False
         db_table = 'film'
+
+
+class History(models.Model):
+    id_history = models.AutoField(primary_key=True)
+    analyze_date = models.DateTimeField(blank=True, null=True)
+    validated = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'history'
 
 
 class JournalistCritics(models.Model):
@@ -48,6 +50,7 @@ class JournalistCritics(models.Model):
     id_film = models.ForeignKey(Film, models.DO_NOTHING, db_column='id_film')
 
     class Meta:
+        managed = False
         db_table = 'journalist_critics'
 
 
@@ -58,10 +61,11 @@ class ModelBertBmus(models.Model):
     three_stars = models.CharField(max_length=50, blank=True, null=True)
     two_stars = models.CharField(max_length=50, blank=True, null=True)
     one_stars = models.CharField(max_length=50, blank=True, null=True)
-    id_history = models.ForeignKey(History, models.DO_NOTHING, db_column='id_history', blank=True, null=False)
+    id_history = models.ForeignKey(History, models.DO_NOTHING, db_column='id_history')
     id_spectator_critics = models.OneToOneField('SpectatorCritics', models.DO_NOTHING, db_column='id_spectator_critics')
 
     class Meta:
+        managed = False
         db_table = 'model_bert_bmus'
 
 
@@ -70,10 +74,11 @@ class ModelDistilbertBmcss(models.Model):
     positive = models.CharField(max_length=50, blank=True, null=True)
     negative = models.CharField(max_length=50, blank=True, null=True)
     neutral = models.CharField(max_length=50, blank=True, null=True)
-    id_history = models.ForeignKey(History, models.DO_NOTHING, db_column='id_history', blank=True, null=False)
+    id_history = models.ForeignKey(History, models.DO_NOTHING, db_column='id_history')
     id_spectator_critics = models.OneToOneField('SpectatorCritics', models.DO_NOTHING, db_column='id_spectator_critics')
 
     class Meta:
+        managed = False
         db_table = 'model_distilbert_bmcss'
 
 
@@ -82,8 +87,9 @@ class SpectatorCritics(models.Model):
     text = models.CharField(blank=True, null=True)
     stars = models.CharField(max_length=50, blank=True, null=True)
     publication_date = models.DateField(blank=True, null=True)
-    id_history = models.ForeignKey(History, models.DO_NOTHING, db_column='id_history', blank=True, null=False)
+    id_history = models.ForeignKey(History, models.DO_NOTHING, db_column='id_history')
     id_film = models.ForeignKey(Film, models.DO_NOTHING, db_column='id_film')
 
     class Meta:
+        managed = False
         db_table = 'spectator_critics'

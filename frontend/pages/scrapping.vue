@@ -27,7 +27,7 @@
                     </div>
                 </div>
                 
-                <div class="grid gap-4 grid-cols-1 lg:grid-cols-2 grid-rows-2 mt-10 p-5">
+                <div class="grid gap-4 grid-cols-1 lg:grid-cols-2 mt-10 p-5">
 
                     <div class="border p-5 overflow-x-auto ">
                         <div class="my-2">
@@ -230,9 +230,6 @@
                 </div>
             </div>
         </dialog>
-
-        <!-- Page content here -->
-        <label for="dashboard-layout" class="btn btn-primary drawer-button lg:hidden">Open drawer</label>
         
     </DashboardLayout>
 </template>

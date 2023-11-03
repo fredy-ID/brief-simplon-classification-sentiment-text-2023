@@ -1,7 +1,7 @@
 <template>
     <DashboardLayout>
         <div class="w-full">
-            <div class="grid gap-4 grid-cols-3 grid-rows-3 p-5">
+            <div class="grid gap-4 grid-cols-1 md:grid-cols-3 lg:grid-cols-4  grid-rows-2 p-5">
 
                 <div class="card bg-neutral shadow-2xl">
                     <figure>
@@ -64,9 +64,6 @@
 
             </div>
         </div>
-
-        <!-- Page content here -->
-        <label for="dashboard-layout" class="btn btn-primary drawer-button lg:hidden">Open drawer</label>
         
     </DashboardLayout>
 

@@ -43,7 +43,7 @@
                         <p class="text-5xl">10</p>
                         <div class="card-actions justify-end">
                         <a href="https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment" target="_blank" class="btn btn-primary">Hugging Face</a>
-                        <a href="https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment" target="_blank" class="btn btn-info ">Google Colab</a>
+                        <a href="https://colab.research.google.com/drive/1JLOGJI70MKOnlWe6dthAxqWATGy5cfaV?usp=sharing&pli=1#scrollTo=xKWLRpX_S6DN" target="_blank" class="btn btn-info ">Google Colab</a>
                         </div>
                     </div>
                 </div>

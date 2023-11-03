@@ -9,3 +9,7 @@ class FilmList(generics.ListAPIView):
 class FilmCreate(generics.ListCreateAPIView):
     queryset = Film.objects.all()
     serializer_class = FilmSerializer
+
+class CriticsList(generics.ListAPIView):
+    queryset = SpectatorCritics.objects.all()
+    serializer_class = SpectatorCriticsSerializer

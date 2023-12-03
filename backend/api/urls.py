@@ -5,7 +5,9 @@ from .models import *
 from .serializer import *
 
 urlpatterns = [
-    path('listFilm/', FilmList.as_view(), name='list-film'),
-    path('createFilm/', FilmCreate.as_view(), name='create-film'),
-    path('listCom/', CriticsList.as_view(), name='list-com')
+    path('list-film/', FilmList.as_view(), name='list-film'),
+    path('create-film/', FilmCreate.as_view(), name='create-film'),
+    path('list-commentaire/', SpectatorCriticsList.as_view(), name='list-commentaire'),
+    path('crud-commentaire/', SpectatorCriticsCrud.as_view(), name='crud-commentaire'),
+    path('api/start_scraping/', views.scrapping, name='start_scraping')
 ]

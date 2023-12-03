@@ -2,8 +2,8 @@
     <DashboardLayout class="">
         <div class="">
             <div class="p-5 flex flex-col md:flex-row items-center justify-center ">
-                <button class="btn btn-primary mt-2 md:mt-0 md:ml-2 md:w-initial">Lancer le scrapping</button>
-                <button class="btn btn-primary mt-2 md:mt-0 md:ml-2 md:w-initial">Arrêter le processus</button>
+                <button @click="startScraping" class="btn btn-primary mt-2 md:mt-0 md:ml-2 md:w-initial">Lancer le scrapping</button>
+                <button @click="stopScraping" class="btn btn-primary mt-2 md:mt-0 md:ml-2 md:w-initial">Arrêter le processus</button>
             </div>
 
             <div class="mockup-window border bg-base-300">
@@ -233,3 +233,40 @@
         
     </DashboardLayout>
 </template>
+
+<script>
+export default {
+    methods: {
+        async startScraping() {
+            try {
+              console.log("Scraping en cours...");
+              let url = "http://127.0.0.1:8000/api/start_scraping/"
+              fetch(url, {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(),
+                })
+              .then((response) => response.json())
+              .then((response) => {
+                  console.log(response.data)
+                  console.log('fin')
+              })
+              .catch((error) => {
+                  console.error(error);
+              });
+            }
+            catch (error) {
+              console.error('Erreur lors du lancement du scrapping', error);
+            }
+          
+        },
+        stopScraping() {
+            // Logique pour arrêter le scraping
+            // Vous pouvez ici arrêter le processus côté serveur ou côté client
+            console.log("Scraping arrêté.");
+        }
+    }
+};
+</script>

@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS history(
 
 CREATE TABLE IF NOT EXISTS film(
    id_film SERIAL,
-   title VARCHAR,
+   title VARCHAR UNIQUE,
    stars_journalist VARCHAR(50),
    stars_spectators VARCHAR(50),
    release_date DATE,

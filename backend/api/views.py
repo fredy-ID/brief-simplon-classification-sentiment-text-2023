@@ -1,7 +1,6 @@
 from django.shortcuts import render
-from rest_framework import generics
+from rest_framework import generics, status
 from django.http import JsonResponse
-from rest_framework import status
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -11,6 +10,7 @@ from collections import defaultdict
 import json
 import re
 import sys
+from django.db import IntegrityError, transaction
 
 from bs4 import BeautifulSoup
 import dateparser
@@ -166,16 +166,23 @@ def title_film():
     films_titles = []
     for i, url in enumerate(urls):
         film_id = re.findall(r'\d+', url)[0]
-        film_url = "{root}/film/fichefilm-{film_id}/critiques/spectateurs".format(
+        film_url = "{root}/video/player_gen_cmedia=19376882&cfilm={film_id}.html".format(
             root=root_url,
             film_id=film_id
         )
         r = requests.get(film_url)
         soup = BeautifulSoup(r.text, 'html.parser')
-        film_title = soup.find("div", {"class": "titlebar titlebar-page"})
-        film_title = film_title.find('span', {"class": 'titlebar-link'})
+
+        film_title = soup.find("div", {"class": "titlebar-title titlebar-title-lg"})
         film_title = film_title.text.strip()
-        films_titles.append((film_title, film_id))
+
+        media_info_div = soup.find('div', class_='media-info-serie light')
+        
+        date_element = media_info_div.find('span', class_=re.compile(r'ACrL2ZACrpbG0vYWdlbmRhL3NlbS0')).text.strip()
+
+        films_titles.append((film_title, film_id,date_element))
+        
+        
 
     return films_titles
 
@@ -224,8 +231,61 @@ def scrapping(request):
     df = pd.DataFrame.from_dict(data)
 
     # Insérer dans la table Film
-    film_serializer = FilmSerializer(data=data.get('film_data'))
-    if film_serializer.is_valid():
-        film_serializer.save()
+    for i in title:
+        
+        title, ref, date_film = i[0],i[1], i[2] 
+        parsed_date = dateparser.parse(date_film, languages=['fr'])
+        formatted_date = parsed_date.strftime('%Y-%m-%d')
+        
+        # film_instance, created = Film.objects.get_or_create(
+        #     title = title,
+        #     reference = ref,
+        #     release_date = formatted_date
+        # )
+        # try:
+        #     film_instance.save()
+        # except IntegrityError:
+        #     # Le film existe déjà, effectuez une action appropriée (par exemple, mettez à jour les champs)
+        #     existing_film = Film.objects.get(title=film_instance.title)
+        #     existing_film.reference = ref
+        #     existing_film.release_date = formatted_date
+        #     existing_film.save()
+        
+        with transaction.atomic():
+            film_instance, created = Film.objects.get_or_create(
+                title=title,
+                reference=ref,
+                release_date=formatted_date
+            )
 
+            if not created:
+                # Le film existe déjà, effectuez une action appropriée
+                film_instance.reference = ref
+                film_instance.release_date = formatted_date
+                film_instance.save()
+
+    # Add dans la table spectator
+    selected_columns = df[['stars', 'text', 'publication_date','film-url']]
+    pattern = r'film/fichefilm-(\d+)'
+    for index, row in selected_columns.iterrows():
+        rating = row['stars']
+        review = row['text']
+        date = row['publication_date']
+        url = row['film-url']
+        match = re.search(pattern, url)
+        if match:
+            ref_film = match.group(1)
+            fk_film = Film.objects.filter(reference=ref_film).first()
+
+            
+        spect_instance = SpectatorCritics(
+            text = review,
+            stars = rating,
+            publication_date = date,
+            id_film = fk_film
+
+        )
+        spect_instance.save()
+        
+        
     return Response({"status": "success"}, status=status.HTTP_201_CREATED)

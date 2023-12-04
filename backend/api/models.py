@@ -30,7 +30,7 @@ class History(models.Model):
 
 class Film(models.Model):
     id_film = models.AutoField(primary_key=True)
-    title = models.CharField(blank=True, null=True)
+    title = models.CharField(blank=True, null=True, max_length=50)
     stars_journalist = models.CharField(max_length=50, blank=True, null=True)
     stars_spectators = models.CharField(max_length=50, blank=True, null=True)
     release_date = models.DateField(blank=True, null=True)
@@ -43,7 +43,7 @@ class Film(models.Model):
 
 class JournalistCritics(models.Model):
     id_journalist_critics = models.AutoField(primary_key=True)
-    text = models.CharField(blank=True, null=True)
+    text = models.TextField(blank=True, null=True)
     stars = models.CharField(max_length=50, blank=True, null=True)
     id_film = models.ForeignKey(Film, models.DO_NOTHING, db_column='id_film')
 
@@ -79,7 +79,7 @@ class ModelDistilbertBmcss(models.Model):
 
 class SpectatorCritics(models.Model):
     id_spectator_critics = models.AutoField(primary_key=True)
-    text = models.CharField(blank=True, null=True)
+    text = models.TextField(blank=True, null=True)
     stars = models.CharField(max_length=50, blank=True, null=True)
     publication_date = models.DateField(blank=True, null=True)
     id_history = models.ForeignKey(History, models.DO_NOTHING, db_column='id_history', blank=True, null=False)

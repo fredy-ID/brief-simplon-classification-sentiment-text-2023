@@ -12,7 +12,7 @@
             <!-- Sidebar content here -->
             <li><a href="/dashboard">Dashboard</a></li>
             <li><a href="/scrapping">Scrapping</a></li>
-            <li><a href="/history">Historique</a></li>
+            <!-- <li><a href="/history">Historique</a></li> -->
           </ul>
         </div>
       </div>

@@ -3,6 +3,7 @@ from rest_framework import generics
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from .models import *
@@ -11,13 +12,25 @@ from collections import defaultdict
 import json
 import re
 import sys
+import statistics
+import ast
 
 from bs4 import BeautifulSoup
 import dateparser
 # from etaprogress.progress import ProgressBar
 import requests
 import os
+from django.conf import settings
 import pandas as pd
+
+import torch
+import torch.nn.functional as F
+
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+model_path = "./hf/models/bert/"
+tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
+model = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment", cache_dir=model_path)
 
 # Create your views here.
 
@@ -192,6 +205,12 @@ def get_film_reviews(root_url ="https://www.allocine.fr", max_reviews_per_film=1
             film_id=film_id
         )
         print(film_url)
+        
+        r = requests.get(film_url)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        film_title = soup.find("div", {"class": "titlebar titlebar-page"})
+        film_title = film_title.find('span', {"class": 'titlebar-link'})
+        film_title = film_title.text.strip()
 
         parse_output = parse_film(film_url, max_reviews_per_film)
         if parse_output:
@@ -204,6 +223,7 @@ def get_film_reviews(root_url ="https://www.allocine.fr", max_reviews_per_film=1
                 continue
 
             allocine_dic['film-url'].extend(len(ratings)*[film_url])
+            allocine_dic['film-title'].extend(len(ratings)*[film_title])
             allocine_dic['stars'].extend(ratings)
             allocine_dic['text'].extend(reviews)
             allocine_dic['publication_date'].extend(dates)
@@ -212,20 +232,175 @@ def get_film_reviews(root_url ="https://www.allocine.fr", max_reviews_per_film=1
 
 
 
-    return allocine_dic
+    return (allocine_dic, max_reviews_per_film)
+
+
+# def model_predict(text, rating):
+
+#   # Define maximum token length for each chunk
+#   max_chunk_length = 256
+#   # Tokenize the input text
+#   tokens = tokenizer.tokenize(tokenizer.decode(tokenizer.encode(text, add_special_tokens=False)))
+#   # Split the tokens into chunks
+#   chunks = [tokens[i:i + max_chunk_length] for i in range(0, len(tokens), max_chunk_length)]
+#   predictions = []
+#   probabilities_list = []
+
+#   for chunk in chunks:
+#     # Convert tokens back to text
+#     chunk_text = tokenizer.decode(tokenizer.convert_tokens_to_ids(chunk))
+
+#     # Tokenize the chunk and make predictions
+#     inputs = tokenizer(chunk_text, return_tensors="pt")
+#     with torch.no_grad():
+#         logits = model(**inputs).logits
+
+#     # Get predicted label for the chunk
+#     predicted_label = logits.argmax(-1).item()
+#     predictions.append(predicted_label)
+
+#     probabilities = F.softmax(logits, dim=1)
+#     chunk_probabilities = probabilities.tolist()[0]
+#     print('probabilities_list:', chunk_probabilities)
+
+#     probabilities_list.append(chunk_probabilities)
+
+#   # Combine predictions using a simple majority vote
+# #   combined_prediction = statistics.mean(predictions)
+#   combined_prediction = max(set(predictions), key=predictions.count)
+#   print(combined_prediction)
+
+#   combined_prediction = model.config.id2label[combined_prediction]
+
+#   # Print the combined prediction
+#   print("Combined Prediction:", combined_prediction)
+
+#   return (text, rating, combined_prediction, probabilities_list)
+
+def model_predict(text):
+
+    # Define maximum token length for each chunk
+    max_chunk_length = 256
+    # Tokenize the input text
+    tokens = tokenizer.tokenize(tokenizer.decode(tokenizer.encode(text, add_special_tokens=False)))
+    # Split the tokens into chunks
+    chunks = []
+    for i in range(0, len(tokens), max_chunk_length):
+        chunks.append(tokens[i:i + max_chunk_length])
+
+    probabilities_list = []
+
+    for chunk in chunks:
+        # Conversation des tokens en text
+        chunk_text = tokenizer.decode(tokenizer.convert_tokens_to_ids(chunk))
+
+        # Tokenisation et prédiction
+        inputs = tokenizer(chunk_text, return_tensors="pt")
+        with torch.no_grad():
+            logits = model(**inputs).logits
+
+        # Transformation des logits en probabilités
+        probabilities = F.softmax(logits, dim=1)
+        chunk_probabilities = probabilities.tolist()[0]
+        probabilities_list.append(chunk_probabilities)
+
+
+    # Combine predictions using a simple majority vote
+    #   combined_prediction = statistics.mean(predictions)
+    # combined_prediction = max(set(predictions), key=predictions.count)
+    # print(combined_prediction)
+
+    # combined_prediction = model.config.id2label[combined_prediction]
+    
+    # Initialize une liste pour stocker la somme des probabilités pour chaque index
+    sum_probabilities = [0.0] * len(probabilities_list[0])
+    sum_highest = 0
+    
+    # Calculer la SOMME des probabilités pour chaque index parmi tous les chunks
+    for chunk_probabilities in probabilities_list:
+        for i, prob in enumerate(chunk_probabilities):
+            sum_probabilities[i] += prob
+            if(i==4):
+                sum_highest = sum_probabilities[i]
+    
+    # Calculer la MOYENNE des probabilités pour chaque index
+    num_chunks = len(probabilities_list)
+    average_probabilities = [prob / num_chunks for prob in sum_probabilities]
+    sum_min_highest = sum_highest / num_chunks
+
+    # Trouver l'index ayant la probabilité moyenne maximale
+    max_average_index = average_probabilities.index(max(average_probabilities))
+
+    # Obtenir la valeur de prédiction correspondant à cet index
+    combined_prediction = model.config.id2label[max_average_index]
+
+    # Afficher la prédiction combinée
+    # print("Combined Prediction: ", combined_prediction)
+    
+
+    return (text, combined_prediction, probabilities_list, sum_highest, sum_min_highest, num_chunks, max_chunk_length)
+
+@csrf_exempt
+@require_POST
+@api_view(['POST'])
+def scrapping(request):
+    print("start scrapping")
+    data, max_reviews_per_film = get_film_reviews()
+
+    title = title_film()
+    df = pd.DataFrame.from_dict(data)
+    df.to_csv("./films-comments/data.csv", index=False)
+    print("scrapping done")
+    # Insérer dans la table Film
+    # film_serializer = FilmSerializer(data=data.get('film_data'))
+    # if film_serializer.is_valid():
+    #     film_serializer.save()
+    
+    
+
+    return Response({"status": "success", "max_reviews_per_film": max_reviews_per_film}, status=status.HTTP_201_CREATED)
+
+# Load model directly
 
 
 @csrf_exempt
 @require_POST
-def scrapping(request):
-    data = get_film_reviews()
+@api_view(['POST'])
+def predict(request):
 
-    title = title_film()
-    df = pd.DataFrame.from_dict(data)
+    
+    # Charger le fichier CSV initial dans un DataFrame df
+    df = pd.read_csv("./films-comments/data.csv")
 
-    # Insérer dans la table Film
-    film_serializer = FilmSerializer(data=data.get('film_data'))
-    if film_serializer.is_valid():
-        film_serializer.save()
+    # Votre code pour effectuer les prédictions
+    data_list = []
+    
+    # film-url,stars,text,publication_date,helpful,unhelpful
 
-    return Response({"status": "success"}, status=status.HTTP_201_CREATED)
+    for index, row in df.iterrows():
+        print('tes')
+        text, combined_prediction, probabilities_list, sum_highest, sum_min_highest, num_chunks, max_chunk_length = model_predict(row['text'])
+        
+        data_list.append({
+            'film_title': row['film-title'],
+            'rating': row['stars'],
+            'predicted_rating': combined_prediction,
+            'sum_min_highest': sum_min_highest,
+            'num_chunks': num_chunks,
+            'sum_highest': sum_highest,
+            'max_chunk_length': max_chunk_length,
+            'probabilities': probabilities_list,
+            'review': text
+        })
+
+    df_predictions = pd.DataFrame(data_list)
+
+    # Trier le DataFrame par 'predicted-rating' et 'mean_probabilities', puis obtenir le top 10
+    top_10_predicted = df_predictions.sort_values(by=['predicted_rating', 'sum_min_highest'], ascending=False).head(25)
+    top_10_predicted['probabilities_string'] = top_10_predicted['probabilities'].apply(lambda x: ', '.join(map(str, x)))
+    top_10_predicted_ratings = top_10_predicted[['film_title','rating', 'predicted_rating', 'sum_min_highest', 'num_chunks', 'sum_highest', 'probabilities_string', 'max_chunk_length']]
+
+    print("top_10_predicted_ratings : ", top_10_predicted_ratings)
+    df_predictions.to_csv('./films-comments/predictions.csv', index=False)
+    
+    return Response({"status": "success", "top": top_10_predicted_ratings}, status=status.HTTP_201_CREATED)

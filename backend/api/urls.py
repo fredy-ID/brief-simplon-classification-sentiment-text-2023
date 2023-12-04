@@ -9,5 +9,6 @@ urlpatterns = [
     path('create-film/', FilmCreate.as_view(), name='create-film'),
     path('list-commentaire/', SpectatorCriticsList.as_view(), name='list-commentaire'),
     path('crud-commentaire/', SpectatorCriticsCrud.as_view(), name='crud-commentaire'),
-    path('api/start_scraping/', views.scrapping, name='start_scraping')
+    path('api/start_scraping/', views.scrapping, name='start_scraping'),
+    path('api/predict/', views.predict, name='predict')
 ]
